@@ -1,0 +1,204 @@
+﻿@model IEnumerable<WebRegistro.Models.User>
+@{
+    ViewData["Title"] = "Cadastro de Biometria do Funcionário";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="mb-0">@ViewData["Title"]</h3>
+                </div>
+                <div class="card-body">
+
+                    <!-- Passo 1: Selecionar o Funcionário -->
+                    <div class="mb-4">
+                        <label for="employeeSelect" class="form-label fw-bold">1. Selecione o Funcionário</label>
+                        <select id="employeeSelect" class="form-select form-select-lg">
+                            <option selected disabled>Escolha um funcionário...</option>
+                            @foreach (var user in Model)
+                            {
+                                <option value="@user.Cpf">@user.NomeCompleto - (@user.Cpf)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Passo 2: Iniciar a Captura -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">2. Inicie a Captura Biométrica</label>
+                        <div>
+                            <button id="enrollButton" class="btn btn-primary btn-lg" disabled>
+                                <i class="bi bi-fingerprint"></i> Iniciar Captura da Digital
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Passo 3: Área de Feedback em Tempo Real -->
+                    <div id="statusArea" class="p-3 rounded bg-light" style="display: none;">
+                        <div class="d-flex align-items-center">
+                            <div id="spinner" class="spinner-border text-primary me-3" role="status" style="display: none;">
+                                <span class="visually-hidden">A carregar...</span>
+                            </div>
+                            <div>
+                                <h6 id="statusTitle" class="mb-1">Estado do Leitor</h6>
+                                <p id="statusMessage" class="mb-0 text-muted">A aguardar início...</p>
+                            </div>
+                        </div>
+                        <div class="progress mt-3" style="height: 20px; display: none;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Elementos da UI
+            const employeeSelect = document.getElementById('employeeSelect');
+            const enrollButton = document.getElementById('enrollButton');
+            const statusArea = document.getElementById('statusArea');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusMessage = document.getElementById('statusMessage');
+            const progressBar = document.getElementById('progressBar');
+            const progressContainer = document.querySelector('.progress');
+            const spinner = document.getElementById('spinner');
+
+            let socket = null;
+            let selectedCpf = null;
+
+            // Ativa o botão de captura apenas quando um funcionário é selecionado
+            employeeSelect.addEventListener('change', function() {
+                selectedCpf = this.value;
+                enrollButton.disabled = !selectedCpf;
+            });
+
+            // Tenta conectar-se ao Agente Biométrico na máquina local
+            function connectToAgent() {
+                socket = new WebSocket("ws://localhost:9001");
+
+                socket.onopen = () => {
+                    console.log("[WebSocket] Conexão com o Agente estabelecida.");
+                    updateStatus("Leitor Pronto", "Aguardando seleção de funcionário.", "success");
+                };
+
+                socket.onmessage = (event) => {
+                    const message = event.data;
+                    console.log(`[WebSocket] Mensagem recebida: ${message}`);
+                    handleAgentMessage(message);
+                };
+
+                socket.onclose = () => {
+                    updateStatus("Desconectado", "Conexão com o agente perdida. Verifique se o programa está em execução e recarregue a página.", "danger");
+                    enrollButton.disabled = true;
+                };
+
+                socket.onerror = (error) => {
+                    updateStatus("Erro de Conexão", "Não foi possível conectar ao Agente Biométrico. Verifique se o programa está em execução na sua máquina.", "danger");
+                    enrollButton.disabled = true;
+                };
+            }
+
+            // Interpreta as mensagens recebidas do Agente e atualiza a UI
+            function handleAgentMessage(message) {
+                const parts = message.split(':');
+                const messageType = parts[0];
+                const statusType = parts[1];
+
+                if (messageType === "status") {
+                    switch(statusType) {
+                        case "enroll_started":
+                        case "sample_captured":
+                            const needed = parseInt(parts[3], 10);
+                            const totalSamples = 4;
+                            const progress = ((totalSamples - needed) / totalSamples) * 100;
+                            updateStatus("Captura em Andamento...", `Posicione o mesmo dedo no leitor. Amostras restantes: ${needed}`, "info", progress);
+                            break;
+                        case "finger_touch":
+                            updateStatus("Leitor Ativo", "Dedo detetado. Mantenha-o firme.", "info");
+                            spinner.style.display = 'block';
+                            break;
+                        case "finger_gone":
+                            updateStatus("Leitor Ativo", "Por favor, posicione o dedo no leitor.", "info");
+                            spinner.style.display = 'none';
+                            break;
+                        case "bad_quality":
+                            updateStatus("Qualidade Baixa", "A leitura da digital não foi boa. Tente novamente, cobrindo toda a área do leitor com o seu dedo.", "warning");
+                            spinner.style.display = 'none';
+                            break;
+                    }
+                }
+                else if (messageType === "enroll_complete") {
+                    const templateBase64 = parts[1];
+                    updateStatus("Cadastro Concluído!", "Digital capturada com sucesso! A enviar para o servidor...", "success");
+                    sendTemplateToServer(templateBase64);
+                }
+            }
+
+            // Atualiza a área de estado para dar feedback ao administrador
+            function updateStatus(title, message, type = "info", progress = null) {
+                statusArea.style.display = 'block';
+                statusTitle.textContent = title;
+                statusMessage.textContent = message;
+                statusArea.className = `p-3 rounded bg-${type}-light`; // Usa cores do Bootstrap
+
+                if (progress !== null) {
+                    progressContainer.style.display = 'block';
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.textContent = `${Math.round(progress)}%`;
+                } else {
+                    progressContainer.style.display = 'none';
+                }
+            }
+
+            // Envia o template finalizado para o BiometriaController
+            async function sendTemplateToServer(templateBase64) {
+                try {
+                    const response = await fetch('/Biometria/Cadastrar', { // Endpoint no seu BiometriaController
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            Cpf: selectedCpf,
+                            BiometricData: templateBase64
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        updateStatus("Sucesso!", result.message, "success");
+                        enrollButton.disabled = true; // Desativa após o sucesso
+                    } else {
+                        updateStatus("Falha no Servidor!", result.message, "danger");
+                    }
+                } catch (error) {
+                    console.error("Erro ao enviar dados para o servidor:", error);
+                    updateStatus("Erro de Comunicação!", "Não foi possível comunicar com o servidor.", "danger");
+                }
+            }
+
+            // Event Listener para o botão de iniciar a captura
+            enrollButton.addEventListener('click', () => {
+                // CORREÇÃO: A variável foi alterada de 'selectedCipf' para 'selectedCpf'.
+                if (socket && socket.readyState === WebSocket.OPEN && selectedCpf) {
+                    updateStatus("A iniciar Captura...", "Por favor, siga as instruções.", "info");
+                    socket.send('enroll');
+                    enrollButton.disabled = true; // Desativa o botão para evitar múltiplos cliques
+                } else {
+                    alert("Selecione um funcionário e verifique a conexão com o leitor.");
+                }
+            });
+
+            // Inicia a conexão com o Agente ao carregar a página
+            connectToAgent();
+        });
+    </script>
+}

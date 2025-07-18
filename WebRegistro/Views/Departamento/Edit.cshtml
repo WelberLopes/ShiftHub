@@ -1,0 +1,54 @@
+﻿@* 1. O model foi atualizado para a ViewModel *@
+@model WebRegistro.ViewModels.DepartamentoCreateViewModel
+
+@{
+    ViewData["Title"] = "Editar Departamento";
+}
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @* É crucial ter um campo oculto para o ID, para que o POST saiba qual registro atualizar *@
+            <input type="hidden" asp-for="Departamento.Id" />
+
+            <div class="form-group mb-3">
+                @* 2. Todos os caminhos agora usam "Departamento." na frente *@
+                <label asp-for="Departamento.Nome" class="control-label"></label>
+                <input asp-for="Departamento.Nome" class="form-control" />
+                <span asp-validation-for="Departamento.Nome" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Departamento.Descricao" class="control-label"></label>
+                <textarea asp-for="Departamento.Descricao" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Departamento.Descricao" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Departamento.ResponsavelCpf" class="control-label">Responsável</label>
+                <select asp-for="Departamento.ResponsavelCpf" class="form-control">
+                    <option value="">-- Selecione um Responsável --</option>
+                    @* O dropdown agora usa a lista da ViewModel *@
+                    @foreach (var usuario in Model.UsuariosDisponiveis)
+                    {
+                        <option value="@usuario.Cpf">@usuario.NomeCompleto</option>
+                    }
+                </select>
+                <span asp-validation-for="Departamento.ResponsavelCpf" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mt-4">
+                <input type="submit" value="Salvar" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">Voltar para a Lista</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,0 +1,90 @@
+﻿<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Comprovante de Registo de Ponto</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: Arial, Helvetica, sans-serif;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        <tr>
+            <td align="center" style="padding: 30px 20px 20px 20px; border-bottom: 1px solid #dee2e6;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td align="center">
+                            <img src="https://i.imgpost.net/2025/06/25/eWzN.png" alt="Logo da Empresa" style="display: block; max-width: 150px;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding-top: 15px; font-size: 24px; font-weight: bold; color: #343a40;">
+                            {{NOME_EMPRESA}}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 30px 40px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td align="center" style="padding-bottom: 25px;">
+                            <h1 style="margin: 0; font-size: 22px; color: #495057;">Comprovante de Registo de Ponto</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-bottom: 20px;">
+                            <p style="margin: 0; font-size: 16px; color: #6c757d;">Funcionário(a):</p>
+                            <p style="margin: 5px 0 0 0; font-size: 18px; color: #212529; font-weight: bold;">{{NOME_FUNCIONARIO}}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-bottom: 20px;">
+                            <p style="margin: 0; font-size: 16px; color: #6c757d;">CPF:</p>
+                            <p style="margin: 5px 0 0 0; font-size: 18px; color: #212529; font-weight: bold;">{{CPF_FUNCIONARIO}}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table border="0" cellpadding="10" cellspacing="0" width="100%" style="background-color: #f8f9fa; border-radius: 5px; border: 1px solid #e9ecef;">
+                                <tr>
+                                    <td width="50%" style="font-size: 16px; color: #6c757d;">Data do Registo:</td>
+                                    <td width="50%" style="font-size: 16px; color: #212529; font-weight: bold; text-align: right;">{{DATA_REGISTRO}}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-size: 16px; color: #6c757d;">Hora do Registo:</td>
+                                    <td style="font-size: 16px; color: #212529; font-weight: bold; text-align: right;">{{HORA_REGISTRO}}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-size: 16px; color: #6c757d;">Tipo de Marcação:</td>
+                                    <td style="font-size: 16px; color: #212529; font-weight: bold; text-align: right;">{{TIPO_REGISTRO}}</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top: 25px;">
+                            <p style="margin: 0; font-size: 14px; color: #6c757d;">Código de Autenticidade (NSR):</p>
+                            <p style="margin: 5px 0 0 0; font-family: 'Courier New', Courier, monospace; font-size: 16px; color: #343a40; background-color: #e9ecef; padding: 8px; border-radius: 4px; text-align: center;">{{NSR_REGISTRO}}</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" style="padding: 20px 40px; background-color: #f1f1f1; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d;">
+                    Este é um e-mail automático. Por favor, não responda.<br><br>
+                    &copy; {{DATA_ANO}} {{NOME_EMPRESA}}. Todos os direitos reservados.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+}. Todos os direitos reservados.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

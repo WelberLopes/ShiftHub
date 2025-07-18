@@ -1,0 +1,333 @@
+﻿@model WebRegistro.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Painel de Administração";
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+
+        <!-- SEUS CARDS DE STATUS (MANTIDOS) -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="display-4 me-3 text-primary">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div>
+                            <div class="fs-2 fw-bold">@Model.TotalFuncionarios</div>
+                            <div class="text-muted small">Total de Funcionários</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm bg-success-subtle">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="display-4 me-3 text-success-emphasis">
+                            <i class="bi bi-person-check-fill"></i>
+                        </div>
+                        <div>
+                            <div class="fs-2 fw-bold">@Model.FuncionariosPresentes</div>
+                            <div class="text-muted small">Presentes Hoje</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm bg-danger-subtle">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="display-4 me-3 text-danger-emphasis">
+                            <i class="bi bi-person-x-fill"></i>
+                        </div>
+                        <div>
+                            <div class="fs-2 fw-bold">@Model.FuncionariosFaltas</div>
+                            <div class="text-muted small">Faltas Hoje</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm bg-warning-subtle">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="display-4 me-3 text-warning-emphasis">
+                            <i class="bi bi-stopwatch-fill"></i>
+                        </div>
+                        <div>
+                            <div class="fs-2 fw-bold">@Model.FuncionariosAtrasados</div>
+                            <div class="text-muted small">Atrasados Hoje</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEU CARD DE GESTÃO DE FUNCIONÁRIOS (MODIFICADO) -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0 text-dark">Gerir Funcionários</h3>
+                <form asp-action="Index" method="get" class="d-flex align-items-center gap-2" style="max-width: 300px;">
+
+                    <select name="departamentoId" asp-for="DepartamentoSelecionadoId"
+                            asp-items="@(new SelectList(Model.Departamentos, "Id", "Nome", Model.DepartamentoSelecionadoId))"
+                            class="form-select form-select-sm" onchange="this.form.submit()">
+
+                        <option value="0">Todos os Departamentos</option>
+
+                    </select>
+
+                    <noscript>
+                        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                    </noscript>
+
+                    @if (Model.DepartamentoSelecionadoId.HasValue)
+                    {
+                        <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="Limpar Filtro">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    }
+                </form>
+                <div>
+                    <a asp-controller="Admin" asp-action="Relatorios" class="btn btn-secondary btn-sm me-2">
+                        <i class="bi bi-clipboard-data me-1"></i> Relatório de Frequência
+                    </a>
+                    <a asp-controller="User" asp-action="Create" class="btn btn-success btn-sm">
+                        <i class="bi bi-person-plus-fill me-1"></i> Novo Funcionário
+                    </a>
+                    <a asp-controller="Biometria" asp-action="CadastrarFuncionario" class="btn btn-primary btn-sm me-2">
+                        <i class="bi bi-fingerprint me-2"></i>Biometria
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="py-3 px-3">Nome Completo</th>
+                                <th class="py-3">Email</th>
+                                <th class="py-3">Cargo</th>
+                                <th class="py-3 px-3 text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model.ListaFuncionarios)
+                            {
+                                <tr>
+                                    <td class="px-3">@user.NomeCompleto</td>
+                                    <td>@user.Email</td>
+                                    <td>@user.Cargo</td>
+                                    <td class="text-end px-3">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <a asp-controller="User" asp-action="Edit" asp-route-cpf="@user.Cpf" class="dropdown-item">
+                                                        <i class="bi bi-pencil-square me-2"></i>Editar
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <form asp-controller="Admin" asp-action="Relatorio" asp-route-data="@DateTime.Now.ToString("yyyy-MM-dd")" class="d-inline">
+                                                        <input type="hidden" name="cpf" value="@user.Cpf" />
+                                                        <button type="submit" class="dropdown-item">
+                                                            <i class="bi bi-file-text me-2"></i>Relatório de Ponto
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form asp-controller="Admin" asp-action="ResumoMensal" asp-route-data="@DateTime.Now.ToString("yyyy-MM-dd")" class="d-inline">
+                                                        <input type="hidden" name="cpf" value="@user.Cpf" />
+                                                        <button type="submit" class="dropdown-item">
+                                                            <i class="bi bi-file-text me-2"></i>Resumo Mensal
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <!-- ALTERAÇÃO: Este botão agora abre o modal -->
+                                                    <button type="button" class="dropdown-item btn-definir-ferias"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#feriasModal"
+                                                            data-cpf="@user.Cpf"
+                                                            data-nome="@user.NomeCompleto">
+                                                        <i class="bi bi-calendar-plus me-2"></i>Definir Férias
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEUS GRÁFICOS E ÚLTIMOS REGISTOS (MANTIDOS) -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="h5 mb-0 text-dark">
+                        <i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Status do Dia
+                    </h3>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart"></canvas>
+            </div>
+        </div>
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h3 class="h5 mb-0 text-dark"><i class="bi bi-clock-history me-2 text-primary"></i>Últimos Registros</h3>
+            </div>
+            <div class="list-group list-group-flush">
+                @foreach (var registro in Model.UltimosRegistros)
+                {
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <div class="fw-bold">@registro.Usuario.NomeCompleto</div>
+                            <small class="text-muted">@registro.Horario.ToString("HH:mm:ss")</small>
+                        </div>
+                        <span class="badge fs-6 fw-normal bg-@(@registro.Tipo == "Entrada" ? "success-subtle text-success-emphasis" : "danger-subtle text-danger-emphasis")">@registro.Tipo</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NOVO MODAL DE FÉRIAS (Adicionado no final do ficheiro) -->
+<div class="modal fade" id="feriasModal" tabindex="-1" aria-labelledby="feriasModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="feriasModalLabel">Definir Período de Férias</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Funcionário: <strong id="modalFuncionarioNome"></strong></p>
+                <form id="formFerias">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="modalFuncionarioCpf" name="cpf" />
+                    <div class="mb-3">
+                        <label for="dataInicio" class="form-label">Data de Início</label>
+                        <input type="date" class="form-control" id="dataInicio" name="dataInicio" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dataFim" class="form-label">Data de Fim</label>
+                        <input type="date" class="form-control" id="dataFim" name="dataFim" required>
+                    </div>
+                    <div id="modalStatus" class="alert mt-3" style="display:none;" role="alert"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="formFerias" class="btn btn-primary">Salvar Férias</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- SEU SCRIPT DO GRÁFICO (MANTIDO) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('dailyChart');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Presentes', 'Faltas', 'Atrasados'],
+                    datasets: [{
+                        label: 'Status do Dia',
+                        data: [@Model.FuncionariosPresentes, @Model.FuncionariosFaltas, @Model.FuncionariosAtrasados],
+                        backgroundColor: [
+                            'rgba(25, 135, 84, 0.5)',
+                            'rgba(220, 53, 69, 0.5)',
+                            'rgba(255, 193, 7, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgb(25, 135, 84)',
+                            'rgb(220, 53, 69)',
+                            'rgb(255, 193, 7)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+
+    <!-- NOVO SCRIPT PARA GERIR O MODAL DE FÉRIAS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const feriasModal = document.getElementById('feriasModal');
+            const formFerias = document.getElementById('formFerias');
+            const modalStatus = document.getElementById('modalStatus');
+
+            feriasModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const cpf = button.getAttribute('data-cpf');
+                const nome = button.getAttribute('data-nome');
+                feriasModal.querySelector('#modalFuncionarioNome').textContent = nome;
+                feriasModal.querySelector('#modalFuncionarioCpf').value = cpf;
+                formFerias.reset();
+                modalStatus.style.display = 'none';
+            });
+
+            formFerias.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(formFerias);
+
+                fetch('/Admin/DefinirFerias', {
+                    method: 'POST',
+                    body: formData
+                    // O AntiForgeryToken é enviado automaticamente com o FormData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        modalStatus.className = 'alert alert-success';
+                        modalStatus.textContent = data.message;
+                        modalStatus.style.display = 'block';
+                        setTimeout(() => {
+                            const modalInstance = bootstrap.Modal.getInstance(feriasModal);
+                            modalInstance.hide();
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        modalStatus.className = 'alert alert-danger';
+                        modalStatus.textContent = data.message;
+                        modalStatus.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    modalStatus.className = 'alert alert-danger';
+                    modalStatus.textContent = 'Ocorreu um erro de comunicação.';
+                    modalStatus.style.display = 'block';
+                });
+            });
+        });
+    </script>
+}

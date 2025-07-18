@@ -1,0 +1,135 @@
+﻿@model WebRegistro.ViewModels.DepartamentoDetailsViewModel
+
+@{
+    ViewData["Title"] = "Detalhes do Departamento";
+
+    // Função auxiliar para gerar cores baseadas no nome para os avatares
+    string GetAvatarColor(string name)
+    {
+        var hash = name.GetHashCode();
+        var r = (hash & 0xFF0000) >> 16;
+        var g = (hash & 0x00FF00) >> 8;
+        var b = hash & 0x0000FF;
+        return $"rgb({r % 200}, {g % 200}, {b % 200})";
+    }
+
+    string GetInitials(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "";
+        var parts = name.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length > 1)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return name.Length > 1 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
+    }
+}
+
+@* Adicione este CSS no seu site.css ou aqui mesmo para os avatares *@
+<style>
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">@Model.Departamento.Nome</h2>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left-circle me-1"></i> Voltar para a Lista
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Informações Gerais</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">@Model.Departamento.Descricao</p>
+            </div>
+            <div class="card-footer text-end">
+                <a asp-action="Edit" asp-route-id="@Model.Departamento.Id" class="btn btn-primary">
+                    <i class="bi bi-pencil-square me-1"></i> Editar Departamento
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Funcionários no Departamento</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col" colspan="2">Nome do Funcionário</th>
+                            <th scope="col">Data de Admissão</th>
+                            <th scope="col">Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Funcionarios.Any())
+                        {
+                            @foreach (var funcionario in Model.Funcionarios)
+                            {
+                                <tr>
+                                    <td style="width: 50px;">
+                                        <div class="avatar" style="background-color: @GetAvatarColor(funcionario.NomeCompleto)">
+                                            @GetInitials(funcionario.NomeCompleto)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">@funcionario.NomeCompleto</div>
+                                        <small class="text-muted">CPF: @funcionario.Cpf</small>
+                                    </td>
+                                    <td>@funcionario.DataAdmissao.ToString("dd/MM/yyyy")</td>
+                                    <td>@funcionario.Email</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <p class="mb-0 text-muted">Nenhum funcionário lotado neste departamento.</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-check-fill me-2"></i>Responsável</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-title">@Model.Departamento.Responsavel?.NomeCompleto</h6>
+                <p class="card-text text-muted">@Model.Departamento.Responsavel?.Email</p>
+            </div>
+        </div>
+        <div class="card shadow-sm text-center">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart-line-fill me-2"></i>Estatísticas</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Total de Funcionários</h6>
+                <p class="card-text fs-1 fw-bold">@Model.Funcionarios.Count()</p>
+            </div>
+        </div>
+    </div>
+</div></div>

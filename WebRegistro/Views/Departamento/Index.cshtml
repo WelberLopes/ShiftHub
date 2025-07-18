@@ -1,0 +1,70 @@
+﻿@model IEnumerable<WebRegistro.Models.Departamento>
+
+@{
+    ViewData["Title"] = "Departamentos";
+}
+
+@* Seção para exibir mensagens de sucesso, erro ou informação vindas do Controller *@
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">@ViewData["Title"]</h3>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle-fill me-1"></i> Criar Novo
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.Nome)</th>
+                        <th>@Html.DisplayNameFor(model => model.Descricao)</th>
+                        <th>Responsável</th>
+                        <th style="width: 150px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@Html.DisplayFor(modelItem => item.Nome)</td>
+                                <td>@Html.DisplayFor(modelItem => item.Descricao)</td>
+                                <td>@Html.DisplayFor(modelItem => item.Responsavel.NomeCompleto)</td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info" title="Detalhes">
+                                        <i class="bi bi-search"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                        <i class="bi bi-trash3-fill"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center">
+                                <p class="my-4">Nenhum departamento encontrado.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

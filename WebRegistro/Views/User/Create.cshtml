@@ -1,0 +1,156 @@
+﻿@model WebRegistro.ViewModels.UserCreateViewModel
+@{
+    ViewData["Title"] = "Cadastro de Funcionário";
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f8f9fa;
+    }
+
+    .form-card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+    }
+</style>
+
+<div class="container my-4 my-md-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-7">
+            <div class="card form-card">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">Cadastrar Novo Funcionário</h2>
+                        <p class="text-muted">Preencha as informações para cadastro.</p>
+                    </div>
+
+                    <form asp-action="Create" id="userForm">
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Usuario.Cpf" class="form-control" placeholder="CPF" maxlength="14" />
+                                    <label asp-for="Usuario.Cpf">CPF</label>
+                                    <span asp-validation-for="Usuario.Cpf" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Usuario.NomeCompleto" class="form-control" placeholder="Nome Completo" />
+                                    <label asp-for="Usuario.NomeCompleto">Nome</label>
+                                    <span asp-validation-for="Usuario.NomeCompleto" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Usuario.Email" class="form-control" type="email" placeholder="email@exemplo.com" />
+                                    <label asp-for="Usuario.Email"></label>
+                                    <span asp-validation-for="Usuario.Email" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <select asp-for="Usuario.DepartamentoId" class="form-select" asp-items="@(new SelectList(Model.DepartamentosDisponiveis, "Id", "Nome"))">
+                                        <option value="" selected>Selecione um departamento</option>
+                                    </select>
+                                    <label asp-for="Usuario.DepartamentoId">Departamento</label>
+                                    <span asp-validation-for="Usuario.DepartamentoId" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <select asp-for="Usuario.Cargo" class="form-select">
+                                        <option value="" selected>Selecione um cargo</option>
+                                        <option value="Administrador">Administrador</option>
+                                        <option value="Estagio">Estágio</option>
+                                        <option value="Telefonista">Telefonista</option>
+                                        <option value="Recepcionista">Recepcionista</option>
+                                        <option value="Faturista">Faturista</option>
+                                        <option value="Técnico de Enfermagem">Técnico de Enfermagem</option>
+                                        <option value="Enfermagem">Enfermagem</option>
+                                        <option value="Coordenacao">Coordenação</option>
+                                    </select>
+                                    <label asp-for="Usuario.Cargo">Cargo</label>
+                                    <span asp-validation-for="Usuario.Cargo" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Usuario.DataAdmissao" class="form-control" type="date" placeholder="Data de Admissão" />
+                                    <label asp-for="Usuario.DataAdmissao"></label>
+                                    <span asp-validation-for="Usuario.DataAdmissao" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <select asp-for="Usuario.Role" class="form-select">
+                                        <option value="" selected>Selecione um perfil</option>
+                                        <option value="Admin">Administrador</option>
+                                        <option value="Funcionario">Funcionário</option>
+                                        <option value="Enfermagem">Enfermagem</option>
+                                    </select>
+                                    <label asp-for="Usuario.Role">Tipo de Usuário</label>
+                                    <span asp-validation-for="Usuario.Role" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Usuario.PasswordHash" class="form-control" type="password" placeholder="Senha" />
+                                    <label asp-for="Usuario.PasswordHash">Senha</label>
+                                    <span asp-validation-for="Usuario.PasswordHash" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
+                                <i class="fas fa-save me-2"></i> Salvar Cadastro
+                            </button>
+                            <a asp-controller="Admin" asp-action="Index" class="btn btn-light w-100 mt-2">
+                                Voltar para a Lista
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // CORREÇÃO: O ID gerado pelo asp-for é 'Usuario_Cpf', mas é mais seguro usar o seletor de name
+            const cpfInput = document.querySelector("[name='Usuario.Cpf']");
+
+            // Máscara para o CPF enquanto o usuário digita
+            if (cpfInput) {
+                cpfInput.addEventListener('input', function (e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                    e.target.value = value;
+                });
+            }
+        });
+    </script>
+}

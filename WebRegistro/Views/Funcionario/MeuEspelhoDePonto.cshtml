@@ -1,0 +1,221 @@
+﻿@model WebRegistro.ViewModels.RelatorioMensalViewModel
+@{
+    ViewData["Title"] = "Espelho de Ponto";
+    Layout = "_Layout";
+
+    string FormatTimeSpan(TimeSpan ts)
+    {
+        return $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}";
+    }
+}
+
+<style>
+    .print-area {
+        font-size: 10px;
+    }
+
+    .table-sm th, .table-sm td {
+        padding: 0.2rem;
+    }
+
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+
+        .print-area, .print-area * {
+            visibility: visible;
+        }
+
+        .print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+    }
+
+    @@page {
+        size: A4 portrait;
+        margin: 0cm;
+    }
+</style>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-lg-5">
+        <div class="no-print mb-4">
+            <form id="competenciaForm" asp-action="MeuEspelhoDePonto" method="get">
+                <input type="hidden" name="cpf" value="@Model.Funcionario.Cpf" />
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <a asp-controller="Ponto" asp-action="Index" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-2"></i>Voltar</a>
+                        <button onclick="window.print()" class="btn btn-sm btn-primary"><i class="bi bi-printer-fill me-1"></i>Imprimir</button>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="competencia" class="form-label"><strong>Filtrar por Competência</strong></label>
+                        <input type="month" id="competencia" name="competencia" class="form-control" value="@Model.Competencia.ToString("yyyy-MM")">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-secondary w-100">Gerar</button>
+                    </div>          
+                </div>
+            </form>
+            
+        </div>
+
+
+        <div class="print-area" id="report-content">
+            <header class="position-relative border-bottom pb-1 mb-2" style="height: 60px;">
+                <!-- Logo à esquerda -->
+                <img src="/img/logoGastroSemTexto.png" alt="Logo" style="height: 40px; position: absolute; left: 0; top: 40%; transform: translateY(-50%);">
+
+                <!-- Nome e CNPJ centralizados -->
+                <div class="text-center">
+                    <h6 class="fw-semibold mb-0 text-nowrap">
+                        ShifHub Soluções LTDA
+                    </h6>
+                    <h6 class="mb-0 text-muted fw-normal">
+                        CNPJ: 12.345.678/0001-99
+                    </h6>
+                </div>
+            </header>
+
+            <h4 class="text-center my-4">Espelho de Ponto</h4>
+
+            <table class="table table-sm table-bordered mb-4">
+                <tbody>
+                    <tr>
+                        <th style="width: 15%;">Funcionário:</th>
+                        <td>@Model.Funcionario.NomeCompleto</td>
+                        <th style="width: 15%;">CPF:</th>
+                        <td>@Model.Funcionario.Cpf</td>
+                    </tr>
+                    <tr>
+                        <th style="width: 15%;">Cargo:</th>
+                        <td>@Model.Funcionario.Cargo</td>
+                        <th style="width: 15%;">Data de Admissão:</th>
+                        <td>@Model.Funcionario.DataAdmissao.ToString("dd/MM/yyyy")</td>
+                    </tr>
+                    <tr>
+                        <th>Competência:</th>
+                        <td>@Model.Competencia.ToString("MMMM / yyyy")</td>
+                        <th style="width: 15%;">Data de Emissão:</th>
+                        <td>@DateTime.Now.ToString("dd/MM/yyyy")</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped align-middle text-center table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Dia</th>
+                            <th>Entrada</th>
+                            <th>Saída Almoço</th>
+                            <th>Volta Almoço</th>
+                            <th>Saída</th>
+                            <th>Horas Dia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 1; i <= DateTime.DaysInMonth(Model.Competencia.Year, Model.Competencia.Month); i++)
+                        {
+                            var dia = new DateTime(Model.Competencia.Year, Model.Competencia.Month, i);
+                            if (Model.RegistrosAgrupadosPorDia.TryGetValue(i, out var registrosDoDia) && registrosDoDia.Any())
+                            {
+                                var registroPrincipal = registrosDoDia.First();
+                                if (registroPrincipal.Tipo == "Falta Justificada")
+                                {
+                                    <tr class="table-info">
+                                        <td>@dia.ToString("dd/MM") (@dia.ToString("ddd"))</td>
+                                        <td colspan="5" class="text-start ps-2">
+                                            <strong>Falta Justificada:</strong> @registroPrincipal.Justificativa
+                                        </td>
+                                    </tr>
+                                }
+                                else if (registroPrincipal.Tipo == "Férias")
+                                {
+                                    <tr class="table-warning">
+                                        <td>@dia.ToString("dd/MM") (@dia.ToString("ddd"))</td>
+                                        <td colspan="5" class="text-start ps-2">
+                                            <strong>Férias:</strong> @registroPrincipal.Justificativa
+                                        </td>
+                                    </tr>
+                                }
+                                else if (registroPrincipal.Tipo == "Fim de Semana")
+                                {
+                                    <tr class="table-secondary">
+                                        <td>@dia.ToString("dd/MM") (@dia.ToString("ddd"))</td>
+                                        <td colspan="5" class="text-muted">Fim de Semana</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    var entrada = registrosDoDia.FirstOrDefault(r => r.Tipo == "Entrada");
+                                    var saidaAlmoco = registrosDoDia.FirstOrDefault(r => r.Tipo == "Saída Almoço");
+                                    var voltaAlmoco = registrosDoDia.FirstOrDefault(r => r.Tipo == "Volta Almoço");
+                                    var saida = registrosDoDia.FirstOrDefault(r => r.Tipo == "Saída");
+                                    var horasDia = saida?.HorasTrabalhadasDia ?? TimeSpan.Zero;
+                                    <tr>
+                                        <td>@dia.ToString("dd/MM") (@dia.ToString("ddd"))</td>
+                                        <td>@(entrada?.Horario.ToString("HH:mm") ?? "--:--")</td>
+                                        <td>@(saidaAlmoco?.Horario.ToString("HH:mm") ?? "--:--")</td>
+                                        <td>@(voltaAlmoco?.Horario.ToString("HH:mm") ?? "--:--")</td>
+                                        <td>@(saida?.Horario.ToString("HH:mm") ?? "--:--")</td>
+                                        <td class="fw-bold">@(FormatTimeSpan(horasDia))</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                var ehDomingo = dia.DayOfWeek == DayOfWeek.Sunday;
+                                <tr class="@(ehDomingo ? "table-secondary" : "")">
+                                    <td>@dia.ToString("dd/MM") (@dia.ToString("ddd"))</td>
+                                    <td colspan="5" class="text-muted">
+                                        @(ehDomingo ? "Domingo" : "Sem registro")
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                    <tfoot class="table-group-divider">
+                        <tr>
+                            <td colspan="5" class="text-end fw-bold">Total de Horas Trabalhadas na Competência:</td>
+                            <td class="fw-bolder fs-5">@FormatTimeSpan(Model.TotalHorasTrabalhadas)</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="print-footer">
+                <div>
+                    <p>Assinatura do Funcionário</p>
+                    <hr class="mx-auto" style="width: 80%;" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const competenciaInput = document.getElementById('competencia');
+            if (competenciaInput) {
+                competenciaInput.addEventListener('change', function () {
+                    document.getElementById('competenciaForm').submit();
+                });
+            }
+        });
+    </script>
+}

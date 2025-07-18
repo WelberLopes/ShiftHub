@@ -1,0 +1,233 @@
+
+/* =================================================================
+   CÓDIGO CSS FINAL E UNIFICADO PARA O LAYOUT
+   ================================================================= */
+/* Estilo geral e Fonte */
+:root {
+    --sidebar-bg: #212529;
+    --sidebar-text: #adb5bd;
+    --sidebar-brand-text: #ffffff;
+    --sidebar-hover-bg: #343a40;
+    --sidebar-active-bg: #0d6efd;
+    --main-bg: #f8f9fa;
+    --text-primary: #212529;
+    --border-color: #dee2e6;
+    --sidebar-width: 260px;
+    --sidebar-width-collapsed: 90px;
+    --transition-speed: 0.3s;
+}
+
+.botao-com-margem {
+    margin-right: 8px;
+}
+
+html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--main-bg);
+    overflow-x: hidden;
+}
+
+/* ===== 1. ESTRUTURA BASE (DESKTOP) ===== */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    transition: width var(--transition-speed) ease;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    /* A transição de margin-left não é necessária com flexbox */
+}
+
+.main-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.page-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* ===== Conteúdo da Sidebar ===== */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--sidebar-hover-bg);
+    margin-bottom: 1.25rem;
+}
+
+    .sidebar-header .bi {
+        font-size: 2rem;
+        color: var(--sidebar-brand-text);
+    }
+
+.sidebar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--sidebar-brand-text);
+    margin: 0;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+    .sidebar-nav a:hover {
+        background-color: var(--sidebar-hover-bg);
+        color: var(--sidebar-brand-text);
+    }
+
+    .sidebar-nav a .bi {
+        font-size: 1.25rem;
+    }
+
+.user-profile {
+    border-top: 1px solid var(--sidebar-hover-bg);
+    padding-top: 1.25rem;
+}
+
+    .user-profile .nav-link {
+        color: var(--sidebar-text);
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.2s ease;
+    }
+
+        .user-profile .nav-link:hover {
+            background-color: var(--sidebar-hover-bg);
+        }
+
+    .user-profile .user-name {
+        color: var(--sidebar-brand-text);
+        font-weight: 500;
+    }
+
+    .user-profile .user-role {
+        font-size: 0.8rem;
+        color: var(--sidebar-text);
+    }
+
+    .user-profile .dropdown-menu {
+        background-color: var(--sidebar-hover-bg);
+        border: 1px solid #495057;
+    }
+
+    .user-profile .dropdown-item {
+        color: var(--sidebar-text);
+    }
+
+        .user-profile .dropdown-item:hover {
+            background-color: #495057;
+            color: #ffffff;
+        }
+
+/* ===== 2. ESTADO RECOLHIDO (DESKTOP) ===== */
+/* MUDANÇA: Alvo é .app-container, não body */
+.app-container.sidebar-collapsed .sidebar {
+    width: var(--sidebar-width-collapsed);
+}
+
+    .app-container.sidebar-collapsed .sidebar .sidebar-brand,
+    .app-container.sidebar-collapsed .sidebar .sidebar-nav span,
+    .app-container.sidebar-collapsed .sidebar .user-profile .user-name,
+    .app-container.sidebar-collapsed .sidebar .user-profile .user-role {
+        display: none;
+    }
+
+    .app-container.sidebar-collapsed .sidebar .sidebar-header,
+    .app-container.sidebar-collapsed .sidebar .sidebar-nav a,
+    .app-container.sidebar-collapsed .sidebar .user-profile .nav-link {
+        justify-content: center;
+    }
+
+    .app-container.sidebar-collapsed .sidebar .dropdown-toggle::after {
+        display: none;
+    }
+
+/* ===== 3. COMPORTAMENTO EM TELAS MENORES (MOBILE/TABLET) ===== */
+@media (max-width: 991.98px) {
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100%;
+        z-index: 1050;
+        transform: translateX(-100%);
+        transition: transform var(--transition-speed) ease-in-out;
+    }
+
+    /* MUDANÇA: Alvo é .app-container, não body */
+    .app-container.sidebar-open .sidebar {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        /* Ocupa toda a tela no mobile */
+        width: 100%;
+    }
+
+    /* Fundo escurecido */
+    .sidebar-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity var(--transition-speed) ease-in-out, visibility var(--transition-speed);
+    }
+
+    /* MUDANÇA: Alvo é .app-container, não body */
+    .app-container.sidebar-open .sidebar-backdrop {
+        opacity: 1;
+        visibility: visible;
+    }
+}

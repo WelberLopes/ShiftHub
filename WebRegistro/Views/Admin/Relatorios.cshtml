@@ -1,0 +1,212 @@
+﻿@model WebRegistro.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Relatórios de Frequência";
+}
+
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-dark">
+            <i class="bi bi-clipboard-data-fill me-2 text-primary"></i>
+            Relatórios de Frequência
+        </h1>
+
+        <form asp-action="Relatorios" method="get" class="d-flex align-items-center">
+            <input type="date" name="data" class="form-control me-2" value="@(ViewContext.HttpContext.Request.Query["data"].FirstOrDefault() ?? DateTime.Now.ToString("yyyy-MM-dd"))" />
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+        </form>
+    </div>
+
+    <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pills-presentes-tab" data-bs-toggle="pill" data-bs-target="#pills-presentes" type="button" role="tab">
+                Presentes <span class="badge bg-success ms-1">@Model.FuncionariosPresentes</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-atrasos-tab" data-bs-toggle="pill" data-bs-target="#pills-atrasos" type="button" role="tab">
+                Atrasos <span class="badge bg-warning ms-1">@Model.FuncionariosAtrasados</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-justificadas-tab" data-bs-toggle="pill" data-bs-target="#pills-justificadas" type="button" role="tab">
+                Justificativas <span class="badge bg-info ms-1">@Model.FuncionariosJustificativas</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-ausentes-tab" data-bs-toggle="pill" data-bs-target="#pills-ausentes" type="button" role="tab">
+                Faltas <span class="badge bg-danger ms-1">@Model.FuncionariosFaltas</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+
+        <div class="tab-pane fade show active" id="pills-presentes" role="tabpanel">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-3">
+                    @if (!Model.ListaPresentes.Any())
+                    {
+                        <div class="text-center p-4 text-muted">Nenhum funcionário presente na data selecionada.</div>
+                    }
+                    else
+                    {
+                        <div class="accordion" id="accordionPresentes">
+                            @foreach (var funcionario in Model.ListaPresentes)
+                            {
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-presente-@funcionario.Cpf.Replace(".", "").Replace("-", "")">
+                                            <div class="d-flex justify-content-between w-100 me-3">
+                                                <span><i class="bi bi-person me-2"></i>@funcionario.NomeCompleto</span>
+                                                <span class="text-muted">@funcionario.Cargo</span>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse-presente-@funcionario.Cpf.Replace(".", "").Replace("-", "")" class="accordion-collapse collapse" data-bs-parent="#accordionPresentes">
+                                        <div class="accordion-body">
+                                            <h6>Registros do Dia:</h6>
+                                            <ul class="list-group list-group-flush">
+                                                @foreach (var registro in funcionario.RegistrosDoDia)
+                                                {
+                                                    <li class="list-group-item d-flex justify-content-between">
+                                                        <span>@registro.Tipo</span>
+                                                        <span class="fw-bold">@registro.Horario.ToString("HH:mm:ss")</span>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="pills-atrasos" role="tabpanel">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-3">
+                    @if (!Model.ListaAtrasados.Any())
+                    {
+                        <div class="text-center p-4 text-muted">Nenhum funcionário atrasado na data selecionada.</div>
+                    }
+                    else
+                    {
+                        <div class="accordion" id="accordionAtrasos">
+                            @foreach (var funcionario in Model.ListaAtrasados)
+                            {
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-atraso-@funcionario.Cpf.Replace(".", "").Replace("-", "")">
+                                            <div class="d-flex justify-content-between w-100 me-3">
+                                                <span><i class="bi bi-person me-2"></i>@funcionario.NomeCompleto</span>
+                                                <span class="badge bg-warning-subtle text-warning-emphasis">Atraso de @funcionario.TempoAtraso.ToString(@"hh\h\ mm\m")</span>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse-atraso-@funcionario.Cpf.Replace(".", "").Replace("-", "")" class="accordion-collapse collapse" data-bs-parent="#accordionAtrasos">
+                                        <div class="accordion-body">
+                                            <h6>Registros do Dia:</h6>
+                                            <ul class="list-group list-group-flush">
+                                                @foreach (var registro in funcionario.RegistrosDoDia)
+                                                {
+                                                    <li class="list-group-item d-flex justify-content-between">
+                                                        <span>@registro.Tipo</span>
+                                                        <span class="fw-bold">@registro.Horario.ToString("HH:mm:ss")</span>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="pills-justificadas" role="tabpanel">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-3">
+                    @if (!Model.ListaJustificadas.Any())
+                    {
+                        <div class="text-center p-4 text-muted">Nenhuma justificativa encontrada na data selecionada.</div>
+                    }
+                    else
+                    {
+                        <div class="accordion" id="accordionJustificadas">
+                            @foreach (var funcionario in Model.ListaJustificadas)
+                            {
+                                var justificativa = funcionario.RegistrosDoDia.FirstOrDefault(r => !string.IsNullOrEmpty(r.Justificativa))?.Justificativa;
+
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-justificada-@funcionario.Cpf.Replace(".", "").Replace("-", "")">
+                                            <div class="d-flex justify-content-between w-100 me-3">
+                                                <span><i class="bi bi-person me-2"></i>@funcionario.NomeCompleto</span>
+                                                <span class="badge bg-info-subtle text-info-emphasis">Com Justificativa</span>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse-justificada-@funcionario.Cpf.Replace(".", "").Replace("-", "")" class="accordion-collapse collapse" data-bs-parent="#accordionJustificadas">
+                                        <div class="accordion-body">
+                                            <h6>Justificativa Apresentada:</h6>
+                                            <p class="border-start border-4 border-info ps-3">
+                                                <em>@justificativa</em>
+                                            </p>
+                                            @if (funcionario.RegistrosDoDia.Any(r => r.Tipo != null))
+                                            {
+                                                <hr />
+                                                <h6>Registros Associados (se houver):</h6>
+                                                <ul class="list-group list-group-flush">
+                                                    @foreach (var registro in funcionario.RegistrosDoDia)
+                                                    {
+                                                        <li class="list-group-item d-flex justify-content-between">
+                                                            <span>@registro.Tipo</span>
+                                                            <span class="fw-bold">@registro.Horario.ToString("HH:mm:ss")</span>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="pills-ausentes" role="tabpanel">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-3">
+                    @if (!Model.ListaAusentes.Any())
+                    {
+                        <div class="text-center p-4 text-muted">Nenhum funcionário com falta na data selecionada.</div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var funcionario in Model.ListaAusentes)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">@funcionario.NomeCompleto</div>
+                                        <small class="text-muted">@funcionario.Cargo</small>
+                                    </div>
+                                    <span class="badge bg-danger-subtle text-danger-emphasis">Falta</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,349 @@
+﻿@model WebRegistro.ViewModels.GestaoEscalaViewModel
+@{
+    ViewData["Title"] = "Gestão de Escala";
+    Layout = "_Layout";
+    int diasNoMes = DateTime.DaysInMonth(Model.DataReferencia.Year, Model.DataReferencia.Month);
+}
+
+<style>
+    /* Seu CSS completo, sem alterações */
+    .escala-grid th, .escala-grid td {
+        min-width: 90px;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+        .escala-grid th:first-child, .escala-grid td:first-child {
+            min-width: 50px;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+        }
+
+    .escala-cell {
+        cursor: pointer;
+        height: 45px;
+        position: relative;
+    }
+
+        .escala-cell:hover {
+            background-color: #e9ecef;
+        }
+
+    .turno-tag {
+        font-size: 0.6rem;
+        padding: .2em .6em;
+    }
+
+    .exame-tag {
+        font-size: 0.6rem;
+        padding: .10em .5em;
+        margin-top: 1px;
+    }
+
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+
+        .print-area, .print-area * {
+            visibility: visible;
+        }
+
+        .print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+
+        .table-responsive {
+            overflow: visible !important;
+        }
+    }
+
+    @@page {
+        size: A4 Portrait;
+        margin: 0cm;
+    }
+</style>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center no-print">
+        <div class="d-flex align-items-center gap-3">
+            <form id="filtrosForm" asp-action="Index" method="get" class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="competencia" class="form-label mb-0">Competência:</label>
+                    <input type="month" id="competencia" name="competencia" class="form-control" value="@Model.DataReferencia.ToString("yyyy-MM")">
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <label for="unidade" class="form-label mb-0">Unidade:</label>
+                    <select id="unidade" name="unidadeId" class="form-select">
+                        <option value="0" selected="@(Model.Unidade == 0)">Todas as Unidades</option>
+                        <option value="1" selected="@(Model.Unidade == 1)">Hba</option>
+                        <option value="2" selected="@(Model.Unidade == 2)">Multiclin</option>
+                        <option value="3" selected="@(Model.Unidade == 3)">BiocheckUp</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-secondary">Ver</button>
+            </form>
+            <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer-fill me-1"></i>Imprimir Escala</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive print-area">
+            <div class="d-none d-print-block text-center mb-3">
+                <h5 class="fw-bold">Escala Mensal - @Model.DataReferencia.ToString("MMMM / yyyy") - Unidade:  @Model.NomeUnidade</h5>
+            </div>
+            <table class="table table-bordered escala-grid mb-2">
+                <thead class="table-light">
+                    <tr>
+                        <th class="sticky-left bg-light">Dia</th>
+                        @foreach (var func in Model.Funcionarios)
+                        {
+                            <th>@func.NomeCompleto</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int dia = 1; dia <= diasNoMes; dia++)
+                    {
+                        var dataAtual = new DateTime(Model.DataReferencia.Year, Model.DataReferencia.Month, dia);
+                        <tr>
+                            <td class="fw-bold bg-light sticky-left">@dia</td>
+                            @foreach (var func in Model.Funcionarios)
+                            {
+                                if (Model.Escalas.ContainsKey(func.Cpf) && Model.Escalas[func.Cpf].TryGetValue(dia, out var escala))
+                                {
+                                    string bgClass = escala.Tipo == "Folga" ? "bg-danger-subtle" : (escala.Turno == "Manhã" ? "bg-primary-subtle" : "bg-info-subtle");
+                                    <td class="@(bgClass) @(User.IsInRole("Enfermagem") ? "escala-cell" : "")"
+                                    @if (User.IsInRole("Enfermagem"))
+                                    {
+                                        <text>
+                                                                data-bs-toggle="modal" data-bs-target="#escalaModal"
+                                                                data-funcionario-id="@func.Cpf" data-funcionario-nome="@func.NomeCompleto" data-data="@dataAtual.ToString("yyyy-MM-dd")"
+                                                                data-escala-id="@escala.Id" data-tipo="@escala.Tipo" data-turno="@escala.Turno" data-tipo-exame="@escala.TipoExame"
+                                                                data-inicio="@escala.HoraInicio" data-fim="@escala.HoraFim" data-unidade="@escala.Unidade"
+                                        </text>
+                                    }>
+                                        @if (escala.Tipo == "Trabalho")
+                                        {
+                                                            <span class="badge rounded-pill @(escala.Turno == "Manhã" ? "bg-primary" : "bg-info") turno-tag">@escala.Turno</span>
+                                                            <div><small>@escala.HoraInicio?.ToString(@"hh\:mm")-@escala.HoraFim?.ToString(@"hh\:mm")</small></div>
+                                            @if (!string.IsNullOrEmpty(escala.TipoExame))
+                                            {
+                                                                    <span class="badge rounded-pill bg-success-subtle text-success-emphasis exame-tag">@escala.TipoExame</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                                            <span class="fw-bold">Folga</span>
+                                        }
+                                                </td>
+                                }
+                                else
+                                {
+                                    @if (User.IsInRole("Enfermagem"))
+                                    {
+                                        <td class="escala-cell" data-bs-toggle="modal" data-bs-target="#escalaModal"
+                                            data-funcionario-id="@func.Cpf" data-funcionario-nome="@func.NomeCompleto" data-data="@dataAtual.ToString("yyyy-MM-dd")">
+                                            <i class="bi bi-plus-lg text-muted"></i>
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td></td>
+                                    }
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade no-print" id="escalaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="escalaModalLabel">Definir Escala</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="DefinirEscala" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="funcionarioId" id="modalFuncionarioId" />
+                    <input type="hidden" name="data" id="modalData" />
+
+                    <p><strong>Funcionário:</strong> <span id="modalNomeFuncionario"></span></p>
+                    <p><strong>Data:</strong> <span id="modalDataFormatada"></span></p>
+
+                    <div class="mb-3">
+                        <label for="modalUnidadeSelect" class="form-label">Unidade da Escala:</label>
+                        <select name="unidadeId" id="modalUnidadeSelect" class="form-select" required>
+                            <option value="1">Hba</option>
+                            <option value="2">Multiclin</option>
+                            <option value="3">BiocheckUp</option>
+                        </select>
+                    </div>
+
+                    <hr />
+                    <div class="mb-3">
+                        <label class="form-label">Tipo:</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="tipo" id="tipoTrabalho" value="Trabalho" checked>
+                            <label class="form-check-label" for="tipoTrabalho">Trabalho</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="tipo" id="tipoFolga" value="Folga">
+                            <label class="form-check-label" for="tipoFolga">Folga</label>
+                        </div>
+                    </div>
+                    <div id="campos-trabalho">
+                        <div class="mb-3">
+                            <label class="form-label">Turno:</label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="turno" id="turnoManha" value="Manhã" checked>
+                                <label class="form-check-label" for="turnoManha">Manhã</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="turno" id="turnoTarde" value="Tarde">
+                                <label class="form-check-label" for="turnoTarde">Tarde</label>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col">
+                                <label for="horaInicio" class="form-label">Início</label>
+                                <input type="time" name="horaInicio" id="modalHoraInicio" class="form-control" />
+                            </div>
+                            <div class="col">
+                                <label for="horaFim" class="form-label">Fim</label>
+                                <input type="time" name="horaFim" id="modalHoraFim" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tipoExame" class="form-label">Tipo de Exame (Opcional):</label>
+                            <select name="tipoExame" id="modalTipoExame" class="form-select">
+                                <option value="">Nenhum</option>
+                                <option value="Endoscopia">Endoscopia</option>
+                                <option value="Ph/mano">Ph/mano</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <div id="remover-container" style="display: none;">
+                        <form asp-action="RemoverEscala" method="post" id="formRemoverEscala" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="escalaId" id="modalEscalaIdParaRemover" />
+                            <input type="hidden" name="unidadeId" id="modalUnidadeIdParaRemover" />
+                            <button type="submit" class="btn btn-danger">Remover</button>
+                        </form>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const filtrosForm = document.getElementById('filtrosForm');
+            if (filtrosForm) {
+                filtrosForm.addEventListener('change', function (event) {
+                    if (event.target.id === 'competencia' || event.target.id === 'unidade') {
+                        filtrosForm.submit();
+                    }
+                });
+            }
+
+            const escalaModal = document.getElementById('escalaModal');
+            if (escalaModal) {
+                escalaModal.addEventListener('show.bs.modal', function (event) {
+                    const cell = event.relatedTarget;
+
+                    // Leitura dos dados da célula
+                    const funcionarioId = cell.getAttribute('data-funcionario-id');
+                    const funcionarioNome = cell.getAttribute('data-funcionario-nome');
+                    const data = cell.getAttribute('data-data');
+                    const escalaId = cell.getAttribute('data-escala-id');
+                    const tipo = cell.getAttribute('data-tipo');
+                    const turno = cell.getAttribute('data-turno');
+                    const tipoExame = cell.getAttribute('data-tipo-exame');
+                    const inicio = cell.getAttribute('data-inicio');
+                    const fim = cell.getAttribute('data-fim');
+                    const unidadeDaEscala = cell.getAttribute('data-unidade');
+
+                    // Preenchimento dos campos do Modal
+                    escalaModal.querySelector('#modalFuncionarioId').value = funcionarioId;
+                    escalaModal.querySelector('#modalData').value = data;
+                    escalaModal.querySelector('#modalNomeFuncionario').textContent = funcionarioNome;
+                    escalaModal.querySelector('#modalDataFormatada').textContent = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
+
+                    // Lógica para o seletor de Unidade
+                    const modalUnidadeSelect = escalaModal.querySelector('#modalUnidadeSelect');
+                    const filtroUnidadePrincipal = document.getElementById('unidade').value;
+                    if (unidadeDaEscala) {
+                        modalUnidadeSelect.value = unidadeDaEscala;
+                    } else if (filtroUnidadePrincipal > 0) {
+                        modalUnidadeSelect.value = filtroUnidadePrincipal;
+                    } else {
+                        modalUnidadeSelect.value = '1'; // Padrão 'Hba' se filtro principal for 'Todas'
+                    }
+
+                    // Preenche os campos para o formulário de remoção
+                    escalaModal.querySelector('#modalEscalaIdParaRemover').value = escalaId || 0;
+                    escalaModal.querySelector('#modalUnidadeIdParaRemover').value = document.getElementById('unidade').value;
+
+                    const camposTrabalho = escalaModal.querySelector('#campos-trabalho');
+                    const removerContainer = escalaModal.querySelector('#remover-container');
+
+                    if (tipo === 'Folga') {
+                        escalaModal.querySelector('#tipoFolga').checked = true;
+                        camposTrabalho.style.display = 'none';
+                    } else {
+                        escalaModal.querySelector('#tipoTrabalho').checked = true;
+                        camposTrabalho.style.display = 'block';
+                    }
+
+                    if (turno === 'Tarde') {
+                        escalaModal.querySelector('#turnoTarde').checked = true;
+                    } else {
+                        escalaModal.querySelector('#turnoManha').checked = true;
+                    }
+
+                    escalaModal.querySelector('#modalTipoExame').value = tipoExame || "";
+                    escalaModal.querySelector('#modalHoraInicio').value = inicio ? inicio.substring(0, 5) : '07:00';
+                    escalaModal.querySelector('#modalHoraFim').value = fim ? fim.substring(0, 5) : '13:00';
+
+                    removerContainer.style.display = escalaId ? 'block' : 'none';
+
+                    escalaModal.querySelectorAll('input[name="tipo"]').forEach((radio) => {
+                        radio.addEventListener('change', function () {
+                            camposTrabalho.style.display = this.value === 'Trabalho' ? 'block' : 'none';
+                        });
+                    });
+                });
+            }
+        });
+    </script>
+}

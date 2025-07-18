@@ -1,0 +1,138 @@
+﻿@model WebRegistro.ViewModels.UserCreateViewModel
+
+@{
+    ViewData["Title"] = "Editar Usuário";
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f8f9fa;
+    }
+
+    .form-card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+        background-color: #fff;
+    }
+</style>
+
+<div class="container my-4 my-md-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-7">
+
+            <div class="card form-card">
+                <div class="card-body p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">Editar Usuário</h2>
+                        <p class="text-muted">Atualize as informações de cadastro.</p>
+                    </div>
+
+                    <form asp-action="Edit" asp-route-cpf="@Model.Usuario.Cpf" method="post">
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                        <input type="hidden" asp-for="Usuario.Cpf" />
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Usuario.NomeCompleto" class="form-control" placeholder="Nome Completo" />
+                                    <label asp-for="Usuario.NomeCompleto">Nome</label>
+                                    <span asp-validation-for="Usuario.NomeCompleto" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Usuario.Email" class="form-control" type="email" placeholder="email@exemplo.com" />
+                                    <label asp-for="Usuario.Email"></label>
+                                    <span asp-validation-for="Usuario.Email" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <select asp-for="Usuario.DepartamentoId" class="form-select" asp-items="@(new SelectList(Model.DepartamentosDisponiveis, "Id", "Nome"))">
+                                        <option value="">Selecione um departamento</option>
+                                    </select>
+                                    <label asp-for="Usuario.DepartamentoId">Departamento</label>
+                                    <span asp-validation-for="Usuario.DepartamentoId" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <select asp-for="Usuario.Cargo" class="form-select">
+                                        <option value="">Selecione um cargo</option>
+                                        <option value="Administrador">Administrador</option>
+                                        <option value="Estagio">Estágio</option>
+                                        <option value="Telefonista">Telefonista</option>
+                                        <option value="Recepcionista">Recepcionista</option>
+                                        <option value="Faturista">Faturista</option>
+                                        <option value="Técnico de Enfermagem">Técnico de Enfermagem</option>
+                                        <option value="Enfermagem">Enfermagem</option>
+                                        <option value="Coordenacao">Coordenação</option>
+                                    </select>
+                                    <label asp-for="Usuario.Cargo">Cargo</label>
+                                    <span asp-validation-for="Usuario.Cargo" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Usuario.DataAdmissao" class="form-control" type="date" />
+                                    <label asp-for="Usuario.DataAdmissao">Data de Admissão</label>
+                                    <span asp-validation-for="Usuario.DataAdmissao" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <select asp-for="Usuario.Role" class="form-select">
+                                        <option value="">Selecione um perfil</option>
+                                        <option value="Admin">Administrador</option>
+                                        <option value="Funcionario">Funcionário</option>
+                                        <option value="Enfermagem">Enfermagem</option>
+                                    </select>
+                                    <label asp-for="Usuario.Role">Tipo de Usuário</label>
+                                    <span asp-validation-for="Usuario.Role" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Usuario.PasswordHash" type="password" class="form-control" placeholder="Nova Senha" value="" />
+                                    <label asp-for="Usuario.PasswordHash">Nova Senha</label>
+                                    <small class="form-text text-muted">Deixe em branco para não alterar a senha.</small>
+                                    <span asp-validation-for="Usuario.PasswordHash" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
+                                <i class="fas fa-save me-2"></i> Salvar Alterações
+                            </button>
+                            <a asp-controller="Admin" asp-action="Index" class="btn btn-light w-100 mt-2">
+                                Cancelar e Voltar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

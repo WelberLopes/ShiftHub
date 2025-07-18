@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "Fechamento Mensal do Banco de Horas";
+}
+
+@* Seção para exibir mensagens de sucesso ou erro *@
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="mb-0">@ViewData["Title"]</h3>
+    </div>
+    <div class="card-body">
+        <p class="lead">
+            Esta função irá calcular o balanço de horas (horas trabalhadas vs. carga horária padrão)
+            para todos os funcionários na competência selecionada e registrará o saldo positivo ou
+            devedor no banco de horas de cada um.
+        </p>
+        <p><strong>Atenção:</strong> Este processo é irreversível. Certifique-se de que todos os registros de ponto do mês foram validados.</p>
+        <hr />
+
+        <form asp-action="ExecutarFechamento" method="post" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="competencia" class="form-label fw-bold">Selecione a Competência</label>
+                <input type="month" id="competencia" name="competencia" class="form-control" value="@ViewBag.CompetenciaSugerida" />
+            </div>
+            <div class="col-md-8">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-calendar-check-fill me-2"></i>
+                    Executar Fechamento do Mês
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

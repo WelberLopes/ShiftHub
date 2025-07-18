@@ -1,0 +1,242 @@
+﻿@* O seu @model e outras diretivas no topo do ficheiro devem ser mantidas *@
+@{
+    Layout = "~/Views/Shared/_LayoutLogin.cshtml";
+    ViewData["Title"] = "Login";
+}
+
+<div class="card shadow-lg border-0" style="width: 450px; border-radius: 1rem;">
+    <div class="card-body p-5">
+
+        <div class="text-center mb-4">
+            <i class="bi bi-calendar-check" style="font-size: 3rem; color: #212529;"></i>
+            <h2 class="fw-bold mt-3">Acesso e Registo de Ponto</h2>
+            <p class="text-muted">Faça login no sistema ou apenas registe o seu ponto.</p>
+        </div>
+
+        <form id="loginForm">
+            <!-- CORREÇÃO CRÍTICA: Adicionado o AntiForgeryToken para segurança -->
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label for="cpf" class="form-label fw-semibold">Utilizador (CPF)</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" id="cpf" name="cpf" class="form-control" placeholder="Digite seu CPF" required />
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="form-label fw-semibold">Senha</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Digite sua senha" required />
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-dark btn-lg shadow-sm" id="btnLogin">
+                    <span id="btnText">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Entrar com Senha
+                    </span>
+                    <span id="loading" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                </button>
+            </div>
+        </form>
+
+        <div class="divider d-flex align-items-center my-4">
+            <p class="text-center fw-bold mx-3 mb-0 text-muted">OU USE A BIOMETRIA</p>
+        </div>
+
+        <div class="d-grid gap-3">
+            <button id="biometricClockInButton" type="button" class="btn btn-success btn-lg shadow-sm" disabled>
+                <i class="bi bi-clock-history"></i> Registar Ponto com Digital
+            </button>
+
+            <button id="biometricLoginButton" type="button" class="btn btn-primary btn-lg shadow-sm" disabled>
+                <i class="bi bi-fingerprint"></i> Entrar no Sistema com Digital
+            </button>
+        </div>
+
+        <div id="statusArea" class="mt-4" style="display: none;">
+            <div class="alert d-flex align-items-center" role="alert">
+                <div id="spinner" class="spinner-border spinner-border-sm me-2" role="status" style="display: none;"></div>
+                <span id="statusMessage">Aguardando...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- ELEMENTOS DO DOM ---
+            const statusArea = $('#statusArea');
+            const statusMessage = $('#statusMessage');
+            const statusSpinner = $('#spinner');
+            const biometricLoginButton = document.getElementById('biometricLoginButton');
+            const biometricClockInButton = document.getElementById('biometricClockInButton');
+            let socket = null;
+            let currentAction = null; // 'login' ou 'clock-in'
+
+            // --- 1. LOGIN COM SENHA (CÓDIGO ATUALIZADO) ---
+            $("#loginForm").submit(function (e) {
+                e.preventDefault();
+                updateStatus("Autenticando com senha...", true, "info");
+
+                var token = getAntiForgeryToken();
+                var data = $(this).serialize();
+
+                $.ajax({
+                    url: "/Login/Login",
+                    type: "POST",
+                    data: data,
+                    headers: {
+                        "RequestVerificationToken": token
+                    },
+                    success: function (res) {
+                        updateStatus("Login bem-sucedido! Redirecionando...", true, "success");
+                        setTimeout(() => { window.location.href = res.redirectUrl; }, 500);
+                    },
+                    error: function (xhr) {
+                        const msg = xhr.responseJSON?.mensagem || "Utilizador ou senha inválidos.";
+                        updateStatus(msg, false, "danger");
+                    }
+                });
+            });
+
+            // --- 2. LÓGICA DE BIOMETRIA ---
+
+            function connectToAgent() {
+                socket = new WebSocket("ws://localhost:9001");
+
+                socket.onopen = () => {
+                    console.log("Conectado ao Agente Biométrico.");
+                    enableBiometricButtons();
+                    updateStatus("Leitor biométrico conectado e pronto.", false, "info");
+                    setTimeout(() => statusArea.hide(), 2000);
+                };
+
+                socket.onmessage = (event) => {
+                    const message = event.data;
+                    if (message.startsWith("verify_featureset:")) {
+                        const featureSetBase64 = message.split(':')[1];
+                        updateStatus("Digital capturada. Verificando no servidor...", true, "info");
+                        if (currentAction === 'login') {
+                            sendBiometricDataToServer('/Login/VerificarBiometriaLogin', featureSetBase64);
+                        } else if (currentAction === 'clock-in') {
+                            sendBiometricDataToServer('/Ponto/RegistrarComBiometria', featureSetBase64);
+                        }
+                    } else if (message.startsWith("status:bad_quality")) {
+                        updateStatus("Qualidade da leitura baixa. Tente novamente.", false, "warning");
+                        enableBiometricButtons();
+                    }
+                };
+
+                socket.onclose = () => {
+                    disableBiometricButtons();
+                    if (currentAction !== 'login-success') {
+                        updateStatus("Agente desconectado. Verifique se o programa do leitor está ativo.", false, "danger");
+                    }
+                };
+
+                socket.onerror = (error) => {
+                    disableBiometricButtons();
+                    const detailedMessage = "Não foi possível conectar ao Agente Biométrico.\n\nPor favor, verifique:\n1. O programa 'AgenteBiometrico.exe' está em execução?\n2. O seu Antivírus ou Firewall não está a bloquear a porta 9001?";
+                    alert(detailedMessage);
+                    updateStatus("Erro de conexão com o leitor.", false, "danger");
+                };
+            }
+
+            async function sendBiometricDataToServer(url, featureSetBase64) {
+                try {
+                    // CORREÇÃO: Adicionado o AntiForgeryToken ao cabeçalho do pedido fetch
+                    const token = getAntiForgeryToken();
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({ BiometricData: featureSetBase64 })
+                    });
+
+                    if (!response.ok) {
+                        // Se a resposta não for OK (ex: 400 Bad Request do AntiForgery), lança um erro
+                        throw new Error(`O servidor respondeu com o estado ${response.status}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        if (currentAction === 'login') {
+                            currentAction = 'login-success';
+                            updateStatus("Login bem-sucedido! Redirecionando...", true, "success");
+                            window.location.href = result.redirectUrl;
+                        } else {
+                            updateStatus(result.message, false, "success");
+                            setTimeout(() => {
+                                enableBiometricButtons();
+                                statusArea.hide();
+                            }, 3000);
+                        }
+                    } else {
+                        updateStatus(result.message, false, "danger");
+                        enableBiometricButtons();
+                    }
+                } catch (error) {
+                    console.error("Erro ao enviar dados para o servidor:", error);
+                    updateStatus("Erro de comunicação com o servidor.", false, "danger");
+                    enableBiometricButtons();
+                }
+            }
+
+            // Listeners dos botões de biometria
+            biometricLoginButton.addEventListener('click', () => {
+                currentAction = 'login';
+                startBiometricCapture("Aguardando digital para ENTRAR no sistema...");
+            });
+
+            biometricClockInButton.addEventListener('click', () => {
+                currentAction = 'clock-in';
+                startBiometricCapture("Aguardando digital para REGISTAR O PONTO...");
+            });
+
+            function startBiometricCapture(message) {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send('verify');
+                    disableBiometricButtons();
+                    updateStatus(message, true, "info");
+                } else {
+                    updateStatus("Conexão com o leitor não está ativa. Tente recarregar a página.", false, "danger");
+                }
+            }
+
+            // --- 3. FUNÇÕES UTILITÁRIAS ---
+            function updateStatus(message, showSpinner, type) {
+                statusArea.show();
+                statusArea.find('.alert').attr('class', `alert alert-${type} d-flex align-items-center`);
+                statusMessage.text(message);
+                showSpinner ? statusSpinner.show() : statusSpinner.hide();
+            }
+
+            function enableBiometricButtons() {
+                biometricLoginButton.disabled = false;
+                biometricClockInButton.disabled = false;
+            }
+
+            function disableBiometricButtons() {
+                biometricLoginButton.disabled = true;
+                biometricClockInButton.disabled = true;
+            }
+
+            // Função auxiliar para obter o valor do token
+            function getAntiForgeryToken() {
+                return $('input[name="__RequestVerificationToken"]').val();
+            }
+
+            // Inicia a conexão com o Agente Biométrico ao carregar a página
+            connectToAgent();
+        });
+    </script>
+}

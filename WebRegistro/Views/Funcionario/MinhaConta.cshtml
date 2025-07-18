@@ -1,0 +1,160 @@
+﻿@model WebRegistro.ViewModels.UserViewModel
+
+@{
+    ViewData["Title"] = "Meu Perfil";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<section style="background-color: #eee;">
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="card mb-4">
+                    <div class="card-body text-center">
+                        <img src="https://via.placeholder.com/150" alt="avatar"
+                             class="rounded-circle img-fluid" style="width: 150px;">
+                        <h5 class="my-3">@Model.NomeCompleto</h5>
+                        <p class="text-muted mb-1">@Model.Cargo</p>
+                        <p class="text-muted mb-4">Empresa WebRegistro</p>
+                        <div class="d-flex justify-content-center mb-2">
+                            <button type="button" class="btn btn-outline-primary ms-1" data-bs-toggle="modal" data-bs-target="#alterarSenhaModal">
+                                Alterar Senha
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h4 class="mb-4">Detalhes da Conta</h4>
+                        <div class="row align-items-center mb-3">
+                            <div class="col-sm-3">
+                                <p class="mb-0"><i class="fas fa-user-circle me-2 text-primary"></i>Nome Completo</p>
+                            </div>
+                            <div class="col-sm-9">
+                                <p class="text-muted mb-0">@Model.NomeCompleto</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row align-items-center mb-3">
+                            <div class="col-sm-3">
+                                <p class="mb-0"><i class="fas fa-envelope me-2 text-primary"></i>Email</p>
+                            </div>
+                            <div class="col-sm-9">
+                                <p class="text-muted mb-0">@Model.Email</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row align-items-center mb-3">
+                            <div class="col-sm-3">
+                                <p class="mb-0"><i class="fas fa-id-card me-2 text-primary"></i>CPF</p>
+                            </div>
+                            <div class="col-sm-9">
+                                <p class="text-muted mb-0">@Model.Cpf</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row align-items-center mb-3">
+                            <div class="col-sm-3">
+                                <p class="mb-0"><i class="fas fa-briefcase me-2 text-primary"></i>Cargo</p>
+                            </div>
+                            <div class="col-sm-9">
+                                <p class="text-muted mb-0">@Model.Cargo</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row align-items-center">
+                            <div class="col-sm-3">
+                                <p class="mb-0"><i class="fas fa-calendar-alt me-2 text-primary"></i>Data de Admissão</p>
+                            </div>
+                            <div class="col-sm-9">
+                                <p class="text-muted mb-0">@Model.DataAdmissao.ToString("dd/MM/yyyy")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="alterarSenhaModal" tabindex="-1" aria-labelledby="alterarSenhaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="alterarSenhaModalLabel">Alterar Minha Senha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="Funcionario" asp-action="AlterarMinhaSenha" method="post" id="formAlterarSenha">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="novaSenha" class="form-label">Nova Senha</label>
+                        <input type="password" class="form-control" id="novaSenha" name="NovaSenha" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmacaoSenha" class="form-label">Confirmar Senha</label>
+                        <input type="password" class="form-control" id="confirmacaoSenha" name="ConfirmacaoSenha" required>
+                    </div>
+                    <div id="passwordError" class="alert alert-danger" style="display: none;" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('formAlterarSenha');
+            if (form) {
+                form.addEventListener('submit', function (event) {
+                    // Impede o envio imediato do formulário para validação
+                    event.preventDefault();
+
+                    const novaSenha = document.getElementById('novaSenha').value;
+                    const confirmacaoSenha = document.getElementById('confirmacaoSenha').value;
+                    const errorDiv = document.getElementById('passwordError');
+
+                    // Esconde a mensagem de erro antes de validar novamente
+                    errorDiv.style.display = 'none';
+                    errorDiv.textContent = '';
+
+                    // Validações
+                    if (!novaSenha || !confirmacaoSenha) {
+                        errorDiv.textContent = 'Ambos os campos de senha devem ser preenchidos.';
+                        errorDiv.style.display = 'block';
+                        return;
+                    }
+
+                    if (novaSenha.length < 6) {
+                        errorDiv.textContent = 'A nova senha deve ter no mínimo 6 caracteres.';
+                        errorDiv.style.display = 'block';
+                        return;
+                    }
+
+                    if (novaSenha !== confirmacaoSenha) {
+                        errorDiv.textContent = 'As senhas não coincidem. Tente novamente.';
+                        errorDiv.style.display = 'block';
+                        return;
+                    }
+
+                    // Se todas as validações passarem, envia o formulário
+                    form.submit();
+                });
+            }
+        });
+    </script>
+}

@@ -1,0 +1,211 @@
+﻿@model WebRegistro.ViewModels.PontoViewModel
+@{
+    ViewData["Title"] = "Relógio de Ponto";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-lg text-center border-0">
+            <div class="card-body p-md-5">
+                <h2 class="card-title h2">Bem-vindo(a), @User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value!</h2>
+                <p id="current-time" class="display-4 fw-bold text-primary my-4">00:00:00</p>
+                <p id="current-day" class="display-6 fw-light text-primary my-4">Carregando data...</p>
+
+                <button id="baterPontoButton" type="button" class="btn btn-primary btn-lg rounded-pill px-5 py-3 mt-3" disabled>
+                    <i class="bi bi-fingerprint"></i> Registrar Ponto com Biometria
+                </button>
+            </div>
+        </div>
+
+        <div id="statusArea" class="mt-4 p-3 rounded" style="display: none;">
+            <div class="d-flex align-items-center">
+                <div id="spinner" class="spinner-border me-3" role="status" style="display: none;">
+                    <span class="visually-hidden">A carregar...</span>
+                </div>
+                <div>
+                    <h6 id="statusTitle" class="mb-1">Estado do Leitor</h6>
+                    <p id="statusMessage" class="mb-0 text-muted">Aguardando...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-4">
+                <h3 class="card-title h4 mb-4">Seus Registos de Hoje</h3>
+                <div id="punches-today" class="vstack gap-3">
+                    @if (Model.RegistrosDeHoje.Any())
+                    {
+                        @foreach (var registro in Model.RegistrosDeHoje)
+                        {
+                            <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded border">
+                                <span class="fw-semibold">@registro.Tipo</span>
+                                <span class="font-monospace text-primary">@registro.Horario.ToLocalTime().ToString("HH:mm:ss")</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center">Ainda não há registos hoje.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- O seu script existente para o relógio (mantido) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const timeEl = document.getElementById('current-time');
+            const dateEl = document.getElementById('current-day');
+
+            function updateClock() {
+                if (timeEl) { timeEl.textContent = new Date().toLocaleTimeString('pt-BR'); }
+            }
+            function updateDate() {
+                const now = new Date();
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                if (dateEl) { dateEl.textContent = now.toLocaleDateString('pt-BR', options); }
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+            updateDate();
+        });
+    </script>
+
+    <!-- SCRIPT DA BIOMETRIA ATUALIZADO -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const baterPontoButton = document.getElementById('baterPontoButton');
+            const statusArea = document.getElementById('statusArea');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusMessage = document.getElementById('statusMessage');
+            const spinner = document.getElementById('spinner');
+
+            let socket = null;
+
+            function connectToAgent() {
+                socket = new WebSocket("ws://localhost:9001");
+
+                socket.onopen = () => {
+                    updateStatus("Leitor Pronto", "Clique no botão para bater o seu ponto.", "success");
+                    baterPontoButton.disabled = false;
+                };
+
+                socket.onmessage = (event) => {
+                    const message = event.data;
+                    if (message.startsWith("verify_featureset:")) {
+                        const featureSetBase64 = message.split(':')[1];
+                        updateStatus("Digital Capturada!", "A verificar no servidor...", "info");
+                        sendVerificationToServer(featureSetBase64);
+                    } else if (message.startsWith("status:")) {
+                        handleStatusMessage(message);
+                    }
+                };
+
+                socket.onclose = () => {
+                    updateStatus("Desconectado", "Conexão com o agente perdida. Verifique se o programa está em execução e recarregue a página.", "danger");
+                    baterPontoButton.disabled = true;
+                };
+
+                socket.onerror = (error) => {
+                    updateStatus("Erro de Conexão", "Não foi possível conectar ao Agente Biométrico. Verifique se o programa está em execução.", "danger");
+                    baterPontoButton.disabled = true;
+                };
+            }
+
+            function handleStatusMessage(message) {
+                const statusType = message.split(':')[1];
+                switch(statusType) {
+                    case "verification_started":
+                        updateStatus("Leitor Ativo", "Por favor, posicione o seu dedo no leitor.", "info");
+                        spinner.style.display = 'block';
+                        break;
+                    case "bad_quality":
+                        updateStatus("Qualidade Baixa", "A leitura não foi boa. Tente novamente, cobrindo toda a área do leitor.", "warning");
+                        spinner.style.display = 'none';
+                        baterPontoButton.disabled = false;
+                        break;
+                }
+            }
+
+            function updateStatus(title, message, type = "secondary") {
+                statusArea.style.display = 'block';
+                statusTitle.textContent = title;
+                statusMessage.textContent = message;
+                statusArea.className = `mt-4 p-3 rounded bg-${type}-light`;
+                spinner.className = `spinner-border text-${type} me-3`;
+            }
+
+            async function sendVerificationToServer(featureSetBase64) {
+                try {
+                    const response = await fetch('/Ponto/VerificarBiometria', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': GetAntiForgeryTokenValue()
+                        },
+                        body: JSON.stringify({ BiometricData: featureSetBase64 })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        // **ATUALIZAÇÃO:** Em vez de recarregar a página, atualiza a lista dinamicamente
+                        updateStatus("Sucesso!", result.message, "success");
+                        addNovoRegistoNaLista(result.novoRegisto);
+                    } else {
+                        updateStatus("Falha na Autenticação!", result.message, "danger");
+                    }
+                } catch (error) {
+                    updateStatus("Erro de Comunicação!", "Não foi possível comunicar com o servidor.", "danger");
+                } finally {
+                    spinner.style.display = 'none';
+                    baterPontoButton.disabled = false; // Reativa o botão
+                }
+            }
+
+            // **NOVA FUNÇÃO:** Adiciona o novo registo à lista na página
+            function addNovoRegistoNaLista(registo) {
+                const punchesList = document.getElementById('punches-today');
+                const noRecordsMessage = punchesList.querySelector('p.text-muted');
+
+                // Se a mensagem "Ainda não há registos hoje" existir, remove-a
+                if (noRecordsMessage) {
+                    noRecordsMessage.remove();
+                }
+
+                // Cria o novo elemento HTML para o registo
+                const newPunchDiv = document.createElement('div');
+                newPunchDiv.className = 'd-flex justify-content-between align-items-center bg-light p-3 rounded border';
+                newPunchDiv.innerHTML = `
+                    <span class="fw-semibold">${registo.tipo}</span>
+                    <span class="font-monospace text-primary">${registo.horario}</span>
+                `;
+
+                // Adiciona o novo registo à lista
+                punchesList.appendChild(newPunchDiv);
+            }
+
+            baterPontoButton.addEventListener('click', () => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send('verify');
+                    baterPontoButton.disabled = true;
+                } else {
+                    alert("A conexão com o leitor não está ativa. Tente recarregar a página.");
+                }
+            });
+
+            function GetAntiForgeryTokenValue() {
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                return tokenInput ? tokenInput.value : "";
+            }
+
+            connectToAgent();
+        });
+    </script>
+}
